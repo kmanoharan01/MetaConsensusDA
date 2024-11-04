@@ -1,10 +1,7 @@
 #' Batch - build_OTU_counts analysis of many comparisons
 #
-#' @description Given a summarized experiment generated using buildSummarized()
-#' this function will automatically perform differential expression (DE)
-#' analysis for all possible groups using 3 different methods 1) EdgeR, 2) Voom
-#' and 3) DEseq2. It will also output 10x diagnostic plots automatically, if the
-#' plotting options are selected (see ?diag_plots for more details).
+#' @description The build_OTU_counts() function combines biom, taxa and sample tables
+#' to create different microbiome plots and differential abundance analyses.
 #
 #' @param biom A "phyloseq" object with included groups
 #'  to be analysed. For format specifications see ?phyloseq E.g.
@@ -18,7 +15,6 @@
 #' @param verbose Verbosity ON/OFF. Default=FALSE
 #'
 #' @return A list of all OTU comparisons conducted.
-#'
 #'
 #' @export build_OTU_counts
 #'
@@ -46,10 +42,13 @@ build_OTU_counts <- function(biom = NULL,
   # Define taxonomy columns
 
   tax_col <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+
   colnames(tax_table(phylo)) <- tax_col
 
   taxa <-  tax_col
 
   return (phylo)
 }
+
+
 

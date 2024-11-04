@@ -1,9 +1,9 @@
 #' Batch - OTUs_multi_DE analysis of many comparisons
 #
-#' @description Given a summarized experiment generated using buildSummarized()
-#' this function will automatically perform differential expression (DE)
-#' analysis for all possible groups using 3 different methods 1) EdgeR, 2) Voom
-#' and 3) DEseq2. It will also output 10x diagnostic plots automatically, if the
+#' @description Given a output using build_OTU_counts()
+#' this function will automatically perform differential abundance (DA)
+#' analysis for all possible groups using 3 different methods 1) EdgeR, 2) ALDEx2
+#' and 3) DEseq2. It will also output Venn diagram and UpSet plots automatically, if the
 #' plotting options are selected (see ?diag_plots for more details).
 #
 #' @param build_OTU_counts_output A "phyloseq" object with included groups
@@ -71,9 +71,9 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
     }
 
 
-   treat_list <- unique(sample_data(build_OTU_counts_output)$Age_Group)
+   treat_list <- unique(sample_data(build_OTU_counts_output)$Group)
 
- # treat_list <- unique(sample_data(build_OTU_counts_output)$Age_Group)
+ # treat_list <- unique(sample_data(build_OTU_counts_output)$Group)
     # Initialize a list to store the results of all comparisons
     all_comparisons_results <- list()
 
@@ -84,7 +84,7 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
       for (other_treatment in treat_list) {
         if (treatment != other_treatment) {
 
-          contrast_list <- c(contrast_list, list(c("Age_Group", treatment, other_treatment)))
+          contrast_list <- c(contrast_list, list(c("Group", treatment, other_treatment)))
 
           contrast_pair <- paste0(treatment, "_vs_", other_treatment)
           cat("Running comparison:", contrast_pair, "\n")
@@ -100,7 +100,7 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
 
          # Subset the samples based on the pair of treatments
          filtered_sample_data <- filtered_sample_data <- sample_data(build_OTU_counts_output)[
-           sample_data(build_OTU_counts_output)$Age_Group %in% c(treatment, other_treatment), ]
+           sample_data(build_OTU_counts_output)$Group %in% c(treatment, other_treatment), ]
 
          # Filter OTU table and taxonomy based on filtered sample data
          filtered_OTU_table <- otu_table(build_OTU_counts_output)[, rownames(filtered_sample_data)]
@@ -110,7 +110,7 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
          build_OTU_subset <- phyloseq(filtered_OTU_table, filtered_tax_table, filtered_sample_data)
 
          # Convert the subsetted phyloseq object to an edgeR-compatible object
-         test_phylo_reads_edgeR <- phyloseq_to_edgeR(build_OTU_subset, group = "Age_Group")
+         test_phylo_reads_edgeR <- phyloseq_to_edgeR(build_OTU_subset, group = "Group")
 
          # Perform differential abundance analysis
          et <- exactTest(test_phylo_reads_edgeR)
@@ -136,12 +136,12 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
          print(other_treatment)
 
 
-            phylo_reads_collapsed_deseq <- phyloseq_to_deseq2(build_OTU_counts_output, ~Age_Group)
+            phylo_reads_collapsed_deseq <- phyloseq_to_deseq2(build_OTU_counts_output, ~Group)
 
    #         phylo_reads_collapsed_deseq <- DESeq(phylo_reads_collapsed_deseq, test="Wald",fitType="parametric")
             phylo_reads_collapsed_deseq <- DESeq(phylo_reads_collapsed_deseq, sfType = "poscounts")
 
-            DESeq2_OTU_DE_results = results(phylo_reads_collapsed_deseq , contrast=c("Age_Group", treatment, other_treatment), tidy=T, format="DataFrame")
+            DESeq2_OTU_DE_results = results(phylo_reads_collapsed_deseq , contrast=c("Group", treatment, other_treatment), tidy=T, format="DataFrame")
 
             comparison_results$DESeq2 <- DESeq2_OTU_DE_results
 
@@ -154,14 +154,14 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
 
           otu_table <- as.matrix(otu_table(build_OTU_counts_output))
 
-          group_info <- sample_data(build_OTU_counts_output)$Age_Group
+          group_info <- sample_data(build_OTU_counts_output)$Group
 
           # Filter OTU table and group info for the specified conditions
           condition_indices <- which(group_info %in% c(treatment, other_treatment))
 
-          count_treatment <- sum(sample_data(build_OTU_counts_output)$Age_Group == treatment)
+          count_treatment <- sum(sample_data(build_OTU_counts_output)$Group == treatment)
 
-          count_other_treatment <- sum(sample_data(build_OTU_counts_output)$Age_Group == other_treatment)
+          count_other_treatment <- sum(sample_data(build_OTU_counts_output)$Group == other_treatment)
 
           filtered_otu <- otu_table[, condition_indices]
 
@@ -189,10 +189,6 @@ OTUs_multi_DE <- function(build_OTU_counts_output = NULL,
       }
     }
 
-
-
     return(all_comparisons_results)
-
-
   }
 

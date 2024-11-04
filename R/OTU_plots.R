@@ -1,11 +1,9 @@
 #' Batch - OTU_plots
 #
-#' @description Given a summarized experiment generated using buildSummarized()
-#' this function will automatically perform differential expression (DE)
-#' analysis for all possible groups using 3 different methods 1) EdgeR, 2) Voom
-#' and 3) DEseq2. It will also output 10x diagnostic plots automatically, if the
-#' plotting options are selected (see ?diag_plots for more details).
-#
+#' @description Given a output using build_OTU_counts()
+#' this function will automatically perform standard microbiome plots such as Principal Coordinates,
+#' Shannon Alpha diversity and Scaled plots.
+#'
 #' @param build_OTU_counts_output A "phyloseq" object with included groups
 #'  to be analysed. For format specifications see ?phyloseq E.g.
 #'  accessible as "build_OTU_counts$otu". Groups are used to automate colouring of
@@ -35,7 +33,6 @@ OTU_plots <- function( build_OTU_counts_output = NULL,
     stop("A build_OTU_counts_output object is not provided. Please provide filenames with full path and rerun.")
   }
 
- # utils::globalVariables(c("Sample", "Abundance", "Class", "Age_Group", "Shannon"))
 
   ####### scale plots ########
   tax_table(build_OTU_counts_output)
@@ -51,17 +48,22 @@ OTU_plots <- function( build_OTU_counts_output = NULL,
   data_phylo2_class$Class <- as.character(data_phylo2_class$Class)
 
   data_phylo2_class$Class[data_phylo2_class$Abundance < 0.01] <- "<1% Abundance"
+
   data_phylo2_class[data_phylo2_class == 0] <- NA
+
   Count = length(unique(data_phylo2_class$Class))
+
   unique(data_phylo2_class$Class)
+
   data_phylo2_class$Class <- factor(data_phylo2_class$Class, levels = c("c__Alphaproteobacteria","c__Bdellovibrionia_A","c__Gammaproteobacteria","c__Clostridia","c__Actinomycetia","c__Bacteroidia","c__Chitinophagia","c__Actinobacteria","c__Fimbriimonadia","c__Verrucomicrobiae","c__Saccharimonadia","c__Bacilli","c__Chthonomonadetes","<1% Abundance"))
-  scale_plot <- ggplot(data=data_phylo2_class,aes_string(x="Sample",y="Abundance",fill="Class")) + facet_grid(~Age_Group,scales="free") + geom_bar(aes(), stat="identity", position="stack") +
+
+  scale_plot <- ggplot(data=data_phylo2_class,aes_string(x="Sample",y="Abundance",fill="Class")) + facet_grid(~Group,scales="free") + geom_bar(aes(), stat="identity", position="stack") +
     scale_fill_manual(values = c("royalblue4", "deepskyblue", "blue","cyan2", "darkorchid","gold1", "forestgreen", "firebrick", "mediumspringgreen", "darkorange1", "deeppink","grey","slategray2", "black"))  +
     theme(  axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
   write.table(data_phylo2_class, file = "tt_class_table.txt", quote=F, sep="\t", col.names = TRUE)
 
-    ggsave("Adults_scale_plot.pdf", plot = scale_plot, width = 8, height = 6)
+  ggsave("Adults_scale_plot.pdf", plot = scale_plot, width = 8, height = 6)
 
 
 
@@ -74,11 +76,14 @@ OTU_plots <- function( build_OTU_counts_output = NULL,
   alpha_diversity <- estimate_richness(build_OTU_counts_output, measures = "Shannon")
 
   sample_data_df <- data.frame(sample_data(build_OTU_counts_output))
+
   sample_data_df$SampleID <- rownames(sample_data_df)
 
   alpha_diversity$SampleID <- rownames(alpha_diversity)
+
   merged_data <- merge(alpha_diversity, sample_data_df, by = "SampleID")
-  Alpha_plot <- ggplot(merged_data, aes_string(x = "Age_Group", y = "Shannon", color = "Age_Group"))
+
+  Alpha_plot <- ggplot(merged_data, aes_string(x = "Group", y = "Shannon", color = "Group"))
 
   Alpha_plot2 <-  Alpha_plot  + geom_boxplot() + scale_color_manual(values = c("royalblue4", "deepskyblue", "blue","cyan2", "darkorchid","gold1", "forestgreen", "firebrick", "mediumspringgreen", "darkorange1", "deeppink","grey","slategray2" )) +  theme_minimal() +
     theme(panel.grid = element_blank(), panel.border = element_blank(),
@@ -96,7 +101,7 @@ OTU_plots <- function( build_OTU_counts_output = NULL,
 
   pcoa <- ordinate(build_OTU_counts_output,"PCoA")
 
-  pcoa_plot <- plot_ordination(build_OTU_counts_output,ordinate(build_OTU_counts_output, "PCoA"),color="Age_Group", label = "SampleID") + theme_bw()
+  pcoa_plot <- plot_ordination(build_OTU_counts_output,ordinate(build_OTU_counts_output, "PCoA"),color="Group", label = "SampleID") + theme_bw()
 
   pcoa_plot2 <- pcoa_plot + theme(panel.grid = element_blank(), panel.border = element_blank(),
                                   axis.line = element_line(color = "black")) +
@@ -112,35 +117,12 @@ OTU_plots <- function( build_OTU_counts_output = NULL,
   OTU_plot_tables <- list(
 
     scale_plot_table <- data_phylo2_class,
+
     AlphaDiv_plot_table <- species_shannon_diversity,
+
     PCoA_table <- pcoa$vectors
   )
 
   return(OTU_plot_tables)
 }
-
-
-#setwd("/Users/jd116080/myprojects/Matt/MicrobiomeConsensusDE/MicroBiomeConsensusDE/OTU_multiDE_R")
-
-#multiple_OTU_plots <- OTU_plots(filtered_physeq)
-
-#t2d_OTU_plots <- OTU_plots(t2d_reads_phy)
-
-#colnames(tax_table(filtered_physeq))
-
-#dirty_mice_OTU_plots <- OTU_plots(dirty_mice_phy)
-
-#GWMC_HOT_COLD_OTU_plots <- OTU_plots(GWMC_HOT_COLD)
-
-#GWMC_HOT_COLD_OTU_plots
-
-
-#sample_data(t2d_OTU_plots)
-
-
-
-
-#multiple_OTU_plots <- OTU_plots(phylo_object2)
-
-
 
